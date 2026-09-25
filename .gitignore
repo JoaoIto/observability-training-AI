@@ -1,0 +1,34 @@
+# Ambientes Virtuais
+.venv/
+venv/
+env/
+ENV/
+
+# Bytecode e Cache do Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# MLflow Tracking e Artefatos Locais
+mlruns/
+mlartifacts/
+artifacts/
+*.db
+*.sqlite
+
+# Dados e Datasets baixados
+*.csv
+*.xlsx
+.cache/
+kaggle/
+
+# IDEs e Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema Operacional
+.DS_Store
+Thumbs.db
