@@ -1,8 +1,7 @@
 # Atividade Prática Avaliativa de Inteligência Artificial — UNITINS
 ## Pipeline de MLOps com PyTorch e MLflow: Predição de Evasão Acadêmica
 
-![print](assets\print.png)
-
+![Painel do MLflow](assets/print.png)
 ```
 =================================================================================================
 UNIVERSIDADE ESTADUAL DO TOCANTINS (UNITINS)
