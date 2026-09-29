@@ -97,44 +97,141 @@ Em observância à **Regra de Ouro da UNITINS (Slide 12)**, os pesos da Run B fo
 
 ---
 
-## 5. Guia Rápido de Instalação e Reprodução
+## 5. Guia Passo a Passo: Execução, Acesso ao MLflow e Comparação Completa dos Painéis
 
-O projeto foi projetado para execução imediata em ambientes Windows, Linux ou macOS.
+Este guia orienta detalhadamente como executar o projeto, inicializar o servidor de observabilidade do MLflow e navegar pelos painéis, gráficos e links diretos para auditar e comparar todas as métricas e artefatos.
 
-### Passo 1: Acessar a Raiz do Repositório
+---
+
+### Passo 1: Preparação do Ambiente e Dependências
+
+Abra o terminal na pasta raiz do projeto:
 ```bash
 cd c:\Users\itofr\Documents\Testes\IA-MlFlow
 ```
 
-### Passo 2: Criar e Ativar o Ambiente Virtual
-**No Windows (PowerShell):**
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-**No Linux / macOS (Bash):**
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
+Ative o ambiente virtual já configurado no repositório:
+- **No Windows (PowerShell):**
+  ```powershell
+  .\.venv\Scripts\Activate.ps1
+  ```
+- **No Linux / macOS (Bash):**
+  ```bash
+  source .venv/bin/activate
+  ```
 
-### Passo 3: Instalar as Dependências Fixadas
+*(Opcional / Verificação)* Caso precise reinstalar ou validar os pacotes:
 ```bash
 pip install -r requirements.txt
 ```
 
-### Passo 4: Executar o Pipeline Completo (Comando Único)
-Este comando executa a ingestão via `kagglehub`, cria os artefatos locais em `artifacts/`, roda sequencialmente as 3 Runs com MLflow Tracing, compara na validação, elege a Campeã e avalia no teste:
+---
+
+### Passo 2: Executar o Pipeline Completo (Comando Único)
+
+Com o ambiente ativado, dispare o orquestrador principal com um único comando:
 ```bash
 python src/train_pipeline.py
 ```
 
-### Passo 5: Iniciar e Visualizar a Interface Web do MLflow
-Abra a interface gráfica do servidor local:
+#### O que o script executa automaticamente em segundo plano:
+1. **Ingestão:** Baixa/carrega o dataset de 4.424 registros e 34 variáveis via `kagglehub`.
+2. **Engenharia de Dados:** Aplica a **Regra de Ouro** (split 60/20/20 estratificado com `SEED=42`), ajusta o `StandardScaler` apenas no treino e salva os artefatos locais em [`artifacts/`](file:///c:/Users/itofr/Documents/Testes/IA-MlFlow/artifacts).
+3. **Treinamento das 3 Runs com MLflow Tracing:** Executa sequencialmente a `Run_A_Referencia`, `Run_B_Taxa_Menor` e `Run_C_Com_L2`, registrando parâmetros, perdas época a época (`step=epoch`), checkpoints de menor perda e spans de rastreamento.
+4. **Eleição da Campeã:** Compara o desempenho estritamente no conjunto de validação e elege a **`Run_B_Taxa_Menor`**.
+5. **Avaliação Cega no Teste:** Avalia os pesos da Campeã **uma única vez** no conjunto de Teste Reservado (885 amostras), imprimindo o relatório e gerando a matriz de confusão gráfica.
+
+---
+
+### Passo 3: Inicializar a Interface Gráfica do MLflow
+
+Em uma janela de terminal com o ambiente ativado, inicie o servidor web do MLflow:
 ```bash
 mlflow ui
 ```
-Em seguida, acesse no navegador: [**http://127.0.0.1:5000**](http://127.0.0.1:5000).
+
+O terminal exibirá a confirmação de inicialização do servidor:
+```
+[INFO] Listening at: http://127.0.0.1:5000
+```
+
+Abra seu navegador de preferência e acesse o endereço:
+👉 [**http://127.0.0.1:5000**](http://127.0.0.1:5000) (ou [**http://localhost:5000**](http://localhost:5000))
+
+---
+
+### Passo 4: Links Diretos do Projeto no Painel do MLflow
+
+Ao abrir a interface web, você pode navegar pelo menu lateral esquerdo ou utilizar diretamente os links diretos catalogados abaixo:
+
+| Destino no MLflow | Link Direto no Navegador | O que Você Visualizará |
+| :--- | :--- | :--- |
+| **Experimento Central** | [**`http://127.0.0.1:5000/#/experiments/3`**](http://127.0.0.1:5000/#/experiments/3) | Tela principal do experimento **`UNITINS_IA_Student_Retention`** contendo a tabela de todas as runs, parâmetros, tags e abas de auditoria. |
+| **Run A (Referência)** | [**`http://127.0.0.1:5000/#/experiments/3/runs/339c966bfa88405b938e2f67f07a7f0b`**](http://127.0.0.1:5000/#/experiments/3/runs/339c966bfa88405b938e2f67f07a7f0b) | Run base com $\text{LR}=0.01$ e $\text{L2}=0.0$, exibindo a menor perda de validação de $0.5875$ na época 7 e o sobreajuste posterior. |
+| **Run B (Campeã 🏆)** | [**`http://127.0.0.1:5000/#/experiments/3/runs/876c59546d4f45288f6183213147ce38`**](http://127.0.0.1:5000/#/experiments/3/runs/876c59546d4f45288f6183213147ce38) | Run vencedora com $\text{LR}=0.001$, exibindo a menor perda global de validação ($0.5649$ na época 16), acurácia de $76,84\%$, e as métricas de teste não visto ($77,74\%$). |
+| **Run C (Com L2)** | [**`http://127.0.0.1:5000/#/experiments/3/runs/3f4d77f700944a7ab53f040a9d75d9f8`**](http://127.0.0.1:5000/#/experiments/3/runs/3f4d77f700944a7ab53f040a9d75d9f8) | Run regularizada com $\text{LR}=0.01$ e $\text{L2}=1\times 10^{-5}$, exibindo a menor perda de validação de $0.5683$ na época 7. |
+
+---
+
+### Passo 5: Como Comparar as 3 Runs Lado a Lado (Painel "Compare")
+
+Para reproduzir a comparação exigida no **Critério 3 da Prova da UNITINS**:
+
+1. Acesse o experimento [**`http://127.0.0.1:5000/#/experiments/3`**](http://127.0.0.1:5000/#/experiments/3).
+2. Na tabela de execuções, marque a caixa de seleção (*checkbox*) à esquerda de cada uma das 3 runs:
+   - `[x] Run_A_Referencia`
+   - `[x] Run_B_Taxa_Menor`
+   - `[x] Run_C_Com_L2`
+3. Clique no botão **"Compare"** que se destacará em azul acima da tabela.
+
+#### Painéis a Inspecionar na Tela de Comparação:
+- **Painel de Parâmetros (Parameters Table):**
+  Veja a auditoria controlada de hiperparâmetros comprovando o isolamento de variáveis: todas as configurações (`batch_size=32`, `epochs=60`, `seed=42`, `architecture`) são idênticas, variando apenas `learning_rate` ($0.01$ vs $0.001$) e `weight_decay_l2` ($0.0$ vs $1\times 10^{-5}$).
+- **Painel de Métricas (Metrics Table):**
+  Analise a tabela comparativa comprovando a superioridade da Run B:
+  * `final_best_val_loss`: Run B atinge **$0.5649$** (menor que Run C com $0.5683$ e Run A com $0.5875$).
+  * `final_best_val_accuracy`: Run B atinge **$76,84\%$** (superior aos $76,61\%$ da Run A e $76,38\%$ da Run C).
+  * `final_best_val_f1_weighted`: Run B atinge **$0.7633$** (maior valor de equilíbrio).
+- **Painel de Gráficos de Curvas (Charts / Metric Plots):**
+  1. No seletor de métricas do gráfico, selecione **`val_loss`**:
+     * **Diagnóstico do Incidente na Run A:** Veja a linha da Run A despencar até a época 7 e depois subir em curva acentuada de formato em **"U"**, terminando em **$0.8851$** (sobreajuste severo).
+     * **Comportamento da Run B:** Veja a linha descer de forma contínua e suave até a época 16 ($0.5649$) e permanecer estável até a época 60 em $0.6322$ (gap de generalização de apenas $0.2652$).
+     * **Efeito da Run C:** Veja que o L2 reduziu a perda na época 7 ($0.5683$), mas não evitou a subida para $0.9322$ devido à taxa agressiva.
+  2. Alterne para o gráfico de **`train_loss`**:
+     * Observe que todas convergem no treino, mas a Run A e C descem rápido demais no início, enquanto a Run B aprende de forma equilibrada.
+  3. Alterne para o gráfico de **`val_accuracy`**:
+     * Observe que a Run A perde acurácia após a época 7 (caindo para $72,09\%$), enquanto a Run B mantém a liderança em todo o treinamento.
+
+---
+
+### Passo 6: Como Auditar Artefatos, Checkpoints e Traces da Run Campeã
+
+Clique no nome da [**`Run_B_Taxa_Menor`**](http://127.0.0.1:5000/#/experiments/3/runs/876c59546d4f45288f6183213147ce38) para abrir sua página detalhada:
+
+#### 1. Painel de Métricas Finais e Teste Reservado (Overview):
+Na seção **Metrics**, comprove a avaliação cega em dados inéditos:
+- `test_accuracy`: **$0.7774$** ($77,74\%$ de acurácia global).
+- `test_f1_weighted`: **$0.7742$** (F1 ponderado no teste).
+- `test_f1_macro`: **$0.7251$** (F1 macro no teste).
+- `test_loss`: **$0.5820$** (perda média no teste).
+
+#### 2. Painel de Artefatos (Aba "Artifacts"):
+No canto inferior da tela da Run, explore as pastas navegáveis:
+- **Pasta `checkpoints/`:** Contém o arquivo binário [`best_model_Run_B_Taxa_Menor.pt`](file:///c:/Users/itofr/Documents/Testes/IA-MlFlow/artifacts) e [`best_model.pt`](file:///c:/Users/itofr/Documents/Testes/IA-MlFlow/artifacts), congelados no momento exato da época 16.
+- **Pasta `preprocessing/`:** Contém [`scaler.pkl`](file:///c:/Users/itofr/Documents/Testes/IA-MlFlow/artifacts/scaler.pkl) e [`resumo_pre_processamento.json`](file:///c:/Users/itofr/Documents/Testes/IA-MlFlow/artifacts/resumo_pre_processamento.json). Clique no JSON para inspecionar os nomes das 34 features e as contagens do particionamento 60/20/20 diretamente na tela do MLflow.
+- **Pasta `test_evaluation/`:**
+  * Clique em [`matriz_confusao_teste.png`](file:///c:/Users/itofr/Documents/Testes/IA-MlFlow/artifacts/matriz_confusao_teste.png): o MLflow exibirá diretamente o plot gráfico da matriz de confusão com anotações numéricas ($392$ concluintes corretos e $214$ evasões corretas).
+  * Clique em [`relatorio_teste_campeao.json`](file:///c:/Users/itofr/Documents/Testes/IA-MlFlow/artifacts/relatorio_teste_campeao.json): exibe o relatório de precisão, recall e f1-score para cada uma das classes.
+- **Pasta `model/`:** Contém o pacote completo do modelo PyTorch registrado via `mlflow.pytorch.log_model`, incluindo o arquivo descritor `MLmodel`, dependências `requirements.txt` e ambiente `conda.yaml` pronto para deploy em microsserviço REST com `mlflow models serve`.
+
+#### 3. Painel de Tracing Distribuído (Aba "Traces"):
+1. No menu superior da página do experimento, clique na aba **"Traces"**.
+2. Veja o registro de auditoria dos **4 Spans de Execução** instrumentados com `@mlflow.trace`:
+   - [`Span_Preparar_Dados`](file:///c:/Users/itofr/Documents/Testes/IA-MlFlow/src/train_pipeline.py#L173): Audita os tempos de carregamento, shapes de tensores e validação de batches.
+   - [`Span_Treinamento`](file:///c:/Users/itofr/Documents/Testes/IA-MlFlow/src/train_pipeline.py#L215): Rastreia a latência das 60 épocas de otimização e registro da época ótima.
+   - [`Span_Validacao_Final`](file:///c:/Users/itofr/Documents/Testes/IA-MlFlow/src/train_pipeline.py#L282): Audita a carga dos pesos do checkpoint e cálculo das métricas finais.
+   - [`Span_Avaliacao_Teste_Reservado`](file:///c:/Users/itofr/Documents/Testes/IA-MlFlow/src/train_pipeline.py#L346): Audita a execução estrita e exclusiva da Run Campeã sobre a partição lacrada de teste.
+3. Clique em qualquer span para inspecionar os metadados de entrada (*Inputs*), saída (*Outputs*) e a árvore hierárquica de latência.
 
 ---
 
